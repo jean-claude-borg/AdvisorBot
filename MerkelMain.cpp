@@ -58,8 +58,8 @@ void MerkelMain::printMarketStats()
     for (std::string const& p : orderBook.getKnownProducts())
     {
         std::cout << "Product: " << p << std::endl;
-        std::vector<OrderBookEntry> entries = orderBook.getOrders(OrderBookType::ask, 
-                                                                p, currentTime);
+        std::vector<OrderBookEntry> entries = orderBook.getOrders(OrderBookType::ask,
+                                                                  p, currentTime);
         std::cout << "Asks seen: " << entries.size() << std::endl;
         std::cout << "Max ask: " << OrderBook::getHighPrice(entries) << std::endl;
         std::cout << "Min ask: " << OrderBook::getLowPrice(entries) << std::endl;
@@ -234,6 +234,6 @@ void MerkelMain::processUserOption(int userOption)
     }
     if(userOption == 7)
     {
-        advisorBot.startAdvisorBot();
+        advisorBot.startAdvisorBot(orderBook);
     }
 }

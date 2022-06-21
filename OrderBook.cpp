@@ -76,6 +76,12 @@ std::string OrderBook::getEarliestTime()
     return orders[0].timestamp;
 }
 
+std::string OrderBook::getLatestTime()
+{
+    auto orderAmount = orders.size();
+    return orders[orderAmount-1].timestamp;
+}
+
 std::string OrderBook::getNextTime(std::string timestamp)
 {
     std::string next_timestamp = "";

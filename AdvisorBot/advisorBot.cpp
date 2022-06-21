@@ -5,7 +5,7 @@ AdvisorBot::AdvisorBot() {
 
 }
 
-void AdvisorBot::startAdvisorBot()
+void AdvisorBot::startAdvisorBot(OrderBook orderBook)
 {
     shouldExit = false;
     std::string line;
@@ -19,7 +19,7 @@ void AdvisorBot::startAdvisorBot()
         tokenVector = parser.parseText(line, delimiter);
 
         // a return value of 1 from processCommands indicates that program should exit
-        if(commandProcessor.processCommands(tokenVector) == 1)
+        if(CommandProcessor::processCommands(tokenVector, orderBook) == 1)
         {
             shouldExit = true;
         }
