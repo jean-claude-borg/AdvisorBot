@@ -24,6 +24,7 @@ class OrderBook
          * If there is no next timestamp, wraps around to the start
          * */
         std::string getNextTime(std::string timestamp);
+        std::string getPreviousTime(std::string timestamp);
 
         void insertOrder(OrderBookEntry& order);
 
@@ -32,7 +33,9 @@ class OrderBook
         static double getHighPrice(std::vector<OrderBookEntry>& orders);
         static double getLowPrice(std::vector<OrderBookEntry>& orders);
 
+        // currentTime is set by default to the latest time
+        std::string currentTime;
+
     private:
         std::vector<OrderBookEntry> orders;
-
 };

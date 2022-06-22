@@ -19,7 +19,7 @@ void AdvisorBot::startAdvisorBot(OrderBook orderBook)
         tokenVector = parser.parseText(line, delimiter);
 
         // a return value of 1 from processCommands indicates that program should exit
-        if(CommandProcessor::processCommands(tokenVector, orderBook) == 1)
+        if(CommandProcessor::processCommands(tokenVector, &orderBook) == 1)
         {
             shouldExit = true;
         }

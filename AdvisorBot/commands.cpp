@@ -1,6 +1,6 @@
 #include "commands.h"
 
-int CommandProcessor::processCommands(std::vector<std::string> tokenVector, OrderBook orderBook)
+int CommandProcessor::processCommands(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
     if(tokenVector[0] == "exit")
     {
@@ -23,7 +23,26 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     {
         CommandProcessor::getMinimumBid(tokenVector, orderBook);
     }
-
+    else if(tokenVector[0] == "max")
+    {
+        CommandProcessor::getMaximumBid(tokenVector, orderBook);
+    }
+    else if(tokenVector[0] == "avg")
+    {
+        CommandProcessor::getAverage(tokenVector, orderBook);
+    }
+    else if(tokenVector[0] == "time")
+    {
+        CommandProcessor::getTime(orderBook);
+    }
+    else if(tokenVector[0] == "step")
+    {
+        CommandProcessor::step(orderBook);
+    }
+    else if(tokenVector[0] == "stepBack")
+    {
+        CommandProcessor::stepBack(orderBook);
+    }
     // return value of 0 means no errors
     return 0;
 }
@@ -46,9 +65,9 @@ void CommandProcessor::clearScreen()
 #endif
 }
 
-void CommandProcessor::listProducts(OrderBook orderBook)
+void CommandProcessor::listProducts(OrderBook* orderBook)
 {
-    auto productVector = orderBook.getKnownProducts();
+    auto productVector = orderBook->getKnownProducts();
     std::cout << "\n" << std::endl;
 
     for(int i = 0; i < productVector.size(); i++)
@@ -59,7 +78,7 @@ void CommandProcessor::listProducts(OrderBook orderBook)
     std::cout << "\n" << std::endl;
 }
 
-void CommandProcessor::getMinimumBid(std::vector<std::string> tokenVector, OrderBook orderBook)
+void CommandProcessor::getMinimumBid(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
     //put all entries with current timeStep in new vector
     enum OrderBookType type;
@@ -69,20 +88,68 @@ void CommandProcessor::getMinimumBid(std::vector<std::string> tokenVector, Order
     else if(tokenVector[2] == "ask")
         type = OrderBookType::ask;
 
-    std::vector<OrderBookEntry> latestOrders = orderBook.getOrders(type, tokenVector[1], orderBook.getLatestTime());
+    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, tokenVector[1], orderBook->currentTime);
 
     OrderBookEntry lowestOrder = latestOrders[0];
 
-//    for(int i = 0; i < latestOrders.size(); i ++)
-//    {
-//        if(latestOrders[i].price < lowestOrder.price)
-//            lowestOrder = latestOrders[i];
-//    }
-//    lowestOrder = latestOrders[0];
+    for(int i = 0; i < latestOrders.size(); i ++)
+    {
+        if(latestOrders[i].price < lowestOrder.price)
+            lowestOrder = latestOrders[i];
+    }
 
     //print OrderBookEntry
     if(type == OrderBookType::bid)
-        std::cout << "\n" << lowestOrder.timestamp << ", " << lowestOrder.product << ", " << "bid, " << lowestOrder.price << ", " << lowestOrder.amount << std::endl;
+        std::cout << "\n" << lowestOrder.timestamp << ", " << lowestOrder.product << ", " << "bid, " << lowestOrder.price << ", " << lowestOrder.amount << "\n" << std::endl;
     else if(type == OrderBookType::ask)
         std::cout << "\n" << lowestOrder.timestamp << ", " << lowestOrder.product << ", " << "ask, " << lowestOrder.price << ", " << lowestOrder.amount << "\n" << std::endl;
+}
+
+void CommandProcessor::getMaximumBid(std::vector<std::string> tokenVector, OrderBook* orderBook)
+{
+    //put all entries with current timeStep in new vector
+    enum OrderBookType type;
+
+    if(tokenVector[2] == "bid")
+        type = OrderBookType::bid;
+    else if(tokenVector[2] == "ask")
+        type = OrderBookType::ask;
+
+    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, tokenVector[1], orderBook->currentTime);
+
+    OrderBookEntry highestOrder = latestOrders[0];
+
+    for(int i = 0; i < latestOrders.size(); i ++)
+    {
+        if(latestOrders[i].price > highestOrder.price)
+            highestOrder = latestOrders[i];
+    }
+
+    //print OrderBookEntry
+    if(type == OrderBookType::bid)
+        std::cout << "\n" << highestOrder.timestamp << ", " << highestOrder.product << ", " << "bid, " << highestOrder.price << ", " << highestOrder.amount << "\n" << std::endl;
+    else if(type == OrderBookType::ask)
+        std::cout << "\n" << highestOrder.timestamp << ", " << highestOrder.product << ", " << "ask, " << highestOrder.price << ", " << highestOrder.amount << "\n" << std::endl;
+}
+
+void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBook* orderBook)
+{
+    //tokenVector[1] = product, 2 = bid or ask, 3 = timesteps(int)
+    int numberOfTimesteps = std::stoi(tokenVector[3]);
+
+}
+
+void CommandProcessor::getTime(OrderBook* orderBook)
+{
+    std::cout << "\nThe current focused timestep is: " << orderBook->currentTime << "\n" << std::endl;
+}
+
+void CommandProcessor::step(OrderBook* orderBook)
+{
+    orderBook->currentTime = orderBook->getNextTime(orderBook->currentTime);
+}
+
+void CommandProcessor::stepBack(OrderBook* orderBook)
+{
+    orderBook->currentTime = orderBook->getPreviousTime(orderBook->currentTime);
 }

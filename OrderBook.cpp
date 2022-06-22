@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <iostream>
 
-
 /** construct, reading a csv data file */
 OrderBook::OrderBook(std::string filename)
 {
     orders = CSVReader::readCSV(filename);
+    currentTime = orders[orders.size()-1].timestamp; //include this in documentation
 }
 
 /** return vector of all know products in the dataset*/
@@ -98,6 +98,25 @@ std::string OrderBook::getNextTime(std::string timestamp)
         next_timestamp = orders[0].timestamp;
     }
     return next_timestamp;
+}
+
+std::string OrderBook::getPreviousTime(std::string timestamp)
+{
+    std::string previous_timestamp = "";
+    for (auto i = orders.size()-1; i > 0; i--)
+    {
+        OrderBookEntry e = orders[i];
+        if (e.timestamp < timestamp)
+        {
+            previous_timestamp = e.timestamp;
+            break;
+        }
+    }
+    if (previous_timestamp == "")
+    {
+        previous_timestamp = orders[orders.size()-1].timestamp;
+    }
+    return previous_timestamp;
 }
 
 void OrderBook::insertOrder(OrderBookEntry& order)
