@@ -15,6 +15,7 @@ public:
     static void getTime(OrderBook* orderBook);
     static void step(OrderBook* orderBook);
     static void stepBack(OrderBook* orderBook);
+    static void predict(std::vector<std::string> tokenVector, OrderBook* orderBook);
 
 private:
     static void clearScreen();

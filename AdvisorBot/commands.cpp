@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "OrderBookEntry.h"
 
 int CommandProcessor::processCommands(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
@@ -42,6 +43,10 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     else if(tokenVector[0] == "stepBack")
     {
         CommandProcessor::stepBack(orderBook);
+    }
+    else if(tokenVector[0] == "predict")
+    {
+        CommandProcessor::predict(tokenVector, orderBook);
     }
     // return value of 0 means no errors
     return 0;
@@ -136,7 +141,54 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
 {
     //tokenVector[1] = product, 2 = bid or ask, 3 = timesteps(int)
     int numberOfTimesteps = std::stoi(tokenVector[3]);
+    std::string currentTimestep = orderBook->currentTime;
+    std::string workingTimestep = currentTimestep;
+    OrderBookType type = OrderBookEntry::stringToOrderBookType(tokenVector[2]);
 
+    double totalPrice = 0;
+    double totalOrders = 0;
+    std::vector<OrderBookEntry> orders;
+
+    for(int i = 0; i < numberOfTimesteps; i++)
+    {
+        orders = orderBook->getOrders(type, tokenVector[1], workingTimestep);
+        workingTimestep = orderBook->getPreviousTime(workingTimestep);
+
+        for(int j = 0; j < orders.size(); j++)
+        {
+            totalPrice += orders[j].price;
+            totalOrders++;
+        }
+    }
+    std::cout << "The average is: " << totalPrice/totalOrders << std::endl;
+}
+
+void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* orderBook)
+{
+    //tokenVector[1] = max/min, 2 = product, 3 = bid or ask
+
+    int numberOfTimesteps = 100; // number of timesteps to take into account is set by defualt to 100
+    std::string currentTimestep = orderBook->currentTime;
+    std::string workingTimestep = currentTimestep;
+    OrderBookType type = OrderBookEntry::stringToOrderBookType(tokenVector[3]);
+
+    double totalMaxPrice = 0;
+    double totalMinPrice = 0;
+    std::vector<OrderBookEntry> orders;
+
+    for(int i = 0; i < numberOfTimesteps; i++)
+    {
+        orders = orderBook->getOrders(type, tokenVector[2], workingTimestep);
+        workingTimestep = orderBook->getPreviousTime(workingTimestep);
+
+        totalMaxPrice += OrderBook::getHighPrice(orders);
+        totalMinPrice += OrderBook::getLowPrice(orders);
+    }
+
+    if(tokenVector[1] == "max")
+        std::cout << "The predicted maximum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMaxPrice/numberOfTimesteps << std::endl;
+    else if(tokenVector[1] == "min")
+        std::cout << "The predicted minimum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMinPrice/numberOfTimesteps << std::endl;
 }
 
 void CommandProcessor::getTime(OrderBook* orderBook)
