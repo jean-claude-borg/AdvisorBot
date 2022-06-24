@@ -3,7 +3,10 @@
 
 int CommandProcessor::processCommands(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
-    if(tokenVector[0] == "exit")
+    if(tokenVector.empty())
+        return 3; //return value of 3 means user inputted nothing
+
+    else if(tokenVector[0] == "exit")
     {
         // return value of 1 means shouldExit
         return 1;
@@ -48,6 +51,12 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     {
         CommandProcessor::predict(tokenVector, orderBook);
     }
+    //if no available command is entered, prints a message saying the command does not exist
+    else
+    {
+        std::cout << "\n" << tokenVector[0] << ": command not found, type help for a list of commands\n" << std::endl;
+        return 2; // return value of 2 indicates that user inputted invalid command
+    }
     // return value of 0 means no errors
     return 0;
 }
@@ -56,9 +65,39 @@ void CommandProcessor::printHelp(std::vector<std::string> tokenVector)
 {
     auto numberOfTokens = tokenVector.size();
     if(numberOfTokens == 1)
-        std::cout << "\nThe available commands are help, help cmd, prod, min, max, avg, predict, time, step and clear\n" << std::endl;
+        std::cout << "\nThe available commands are help, prod, min, max, avg, predict, time, step, stepBack, clear and exit\n" << std::endl;
     else if(numberOfTokens == 2 && tokenVector[1] == "prod")
         std::cout << "\nThe prod command will show all available products as a list\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "clear")
+        std::cout << "\nThe clear command will clear the screen\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "min")
+        std::cout << "\nThe min command will find the minimum price of the given product in the current timestep\n"
+                  << "Syntax: min [product] [bid/ask]\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "max")
+        std::cout << "\nThe max command will find the maximum price of the given product in the current timestep\n"
+                  << "Syntax: max [product] [bid/ask]\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "avg")
+        std::cout << "\nThe avg command will find the average bid/ask price of the given product over the given timesteps\n"
+                  << "Syntax: avg [product] [bid/ask] [timesteps]\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "predict")
+        std::cout << "\nThe predict command will attempt to predict the min/max price(ask or bid) of the given product\n"
+                  << "Syntax: predict [max/min] [product] [bid/ask]\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "time")
+        std::cout << "\nThe time command will print the current timestep in focus\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "step")
+        std::cout << "\nThe step command will move focus to the next timestep\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "stepBack")
+        std::cout << "\nThe stepBack command will move focus to the previous timestep\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "exit")
+        std::cout << "\nThe exit command will exit this program\n" << std::endl;
+
+    else
+    {
+        if(numberOfTokens == 2)
+            std::cout << "\n" <<tokenVector[1] << ": command does not exist, type help for a list of commands\n" << std::endl;
+        else
+            std::cout << "\nerror: invalid number of arguments, expected 1 but got " << numberOfTokens-1 << "\n" << std::endl;
+    }
 }
 
 void CommandProcessor::clearScreen()
@@ -85,65 +124,123 @@ void CommandProcessor::listProducts(OrderBook* orderBook)
 
 void CommandProcessor::getMinimumBid(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
+    //makes sure correct number of arguments were passed to function
+    auto numberOfTokens = tokenVector.size();
+    if(numberOfTokens != 3)
+    {
+        std::cout << "\nerror: invalid number of arguments, expected 2 but got " << numberOfTokens-1 << "\n" << std::endl;
+        return;
+    }
+
+    std::string product = tokenVector[1];
+    std::string productType = tokenVector[2];
+
     //put all entries with current timeStep in new vector
     enum OrderBookType type;
-
-    if(tokenVector[2] == "bid")
+    if(productType == "bid")
         type = OrderBookType::bid;
-    else if(tokenVector[2] == "ask")
+    else if(productType == "ask")
         type = OrderBookType::ask;
+    //if user inputted invalid type:
+    else
+    {
+        std::cout << "\n" << productType << ": not a valid product type, expected bid or ask\n" << std::endl;
+        return;
+    }
 
-    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, tokenVector[1], orderBook->currentTime);
+    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, product, orderBook->currentTime);
 
+    //since orderType is already verified, if latestOrders is empty, it means that the user inputted an invalid product
+    if(latestOrders.empty())
+    {
+        std::cout << "\n" << product << ": invalid product, use prod command for a list of available products\n" << std::endl;
+        return;
+    }
+
+    //latestOrders is a vector containing all the correct orders
     OrderBookEntry lowestOrder = latestOrders[0];
-
     for(int i = 0; i < latestOrders.size(); i ++)
     {
         if(latestOrders[i].price < lowestOrder.price)
             lowestOrder = latestOrders[i];
     }
 
-    //print OrderBookEntry
-    if(type == OrderBookType::bid)
-        std::cout << "\n" << lowestOrder.timestamp << ", " << lowestOrder.product << ", " << "bid, " << lowestOrder.price << ", " << lowestOrder.amount << "\n" << std::endl;
-    else if(type == OrderBookType::ask)
-        std::cout << "\n" << lowestOrder.timestamp << ", " << lowestOrder.product << ", " << "ask, " << lowestOrder.price << ", " << lowestOrder.amount << "\n" << std::endl;
+    //prints the lowest price
+    std::cout << "\nThe min " << productType << " for " << product << " is " << lowestOrder.price << "\n" << std::endl;
 }
 
 void CommandProcessor::getMaximumBid(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
-    //put all entries with current timeStep in new vector
+    //makes sure correct number of arguments were passed to function
+    auto numberOfTokens = tokenVector.size();
+    if(numberOfTokens != 3)
+    {
+        std::cout << "\nerror: invalid number of arguments, expected 2 but got " << numberOfTokens-1 << "\n" << std::endl;
+        return;
+    }
+
+    std::string product = tokenVector[1];
+    std::string productType = tokenVector[2];
+
     enum OrderBookType type;
-
-    if(tokenVector[2] == "bid")
+    if(productType == "bid")
         type = OrderBookType::bid;
-    else if(tokenVector[2] == "ask")
+    else if(productType == "ask")
         type = OrderBookType::ask;
+        //if user inputted invalid type:
+    else
+    {
+        std::cout << "\n" << productType << ": not a valid product type, expected bid or ask\n" << std::endl;
+        return;
+    }
 
-    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, tokenVector[1], orderBook->currentTime);
+    //latestOrders is a vector containing all the correct orders
+    std::vector<OrderBookEntry> latestOrders = orderBook->getOrders(type, product, orderBook->currentTime);
+
+    //since orderType is already verified, if latestOrders is empty, it means that the user inputted an invalid product
+    if(latestOrders.empty())
+    {
+        std::cout << "\n" << product << ": invalid product, use prod command for a list of available products\n" << std::endl;
+        return;
+    }
 
     OrderBookEntry highestOrder = latestOrders[0];
-
-    for(int i = 0; i < latestOrders.size(); i ++)
+    for(int i = 0; i < latestOrders.size(); i++)
     {
         if(latestOrders[i].price > highestOrder.price)
             highestOrder = latestOrders[i];
     }
 
-    //print OrderBookEntry
-    if(type == OrderBookType::bid)
-        std::cout << "\n" << highestOrder.timestamp << ", " << highestOrder.product << ", " << "bid, " << highestOrder.price << ", " << highestOrder.amount << "\n" << std::endl;
-    else if(type == OrderBookType::ask)
-        std::cout << "\n" << highestOrder.timestamp << ", " << highestOrder.product << ", " << "ask, " << highestOrder.price << ", " << highestOrder.amount << "\n" << std::endl;
+    //prints the highest price
+    std::cout << "\nThe max " << productType << " for " << product << " is " << highestOrder.price << "\n" << std::endl;
 }
 
 void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
     //tokenVector[1] = product, 2 = bid or ask, 3 = timesteps(int)
-    int numberOfTimesteps = std::stoi(tokenVector[3]);
+    int numberOfTimesteps;
+    try {
+        numberOfTimesteps = std::stoi(tokenVector[3]);
+    }catch (std::exception &e){
+        std::cout << "\nerror: invalid input, expected an integer but received: " << tokenVector[3] << "\n" << std::endl;
+        return;
+    }
     std::string currentTimestep = orderBook->currentTime;
     std::string workingTimestep = currentTimestep;
-    OrderBookType type = OrderBookEntry::stringToOrderBookType(tokenVector[2]);
+    std::string productType = tokenVector[2];
+    std::string product = tokenVector[1];
+
+    enum OrderBookType type;
+    if(productType == "bid")
+        type = OrderBookType::bid;
+    else if(productType == "ask")
+        type = OrderBookType::ask;
+        //if user inputted invalid type:
+    else
+    {
+        std::cout << "\n" << productType << ": not a valid product type, expected bid or ask\n" << std::endl;
+        return;
+    }
 
     double totalPrice = 0;
     double totalOrders = 0;
@@ -152,11 +249,11 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
     //prevents going back more timesteps than are available
     if(numberOfTimesteps <= orderBook->indexOfVectorWithMatchingTimestamps) {
         for (int i = 0; i < numberOfTimesteps; i++) {
-            orders = orderBook->getOrders(type, tokenVector[1], workingTimestep);
+            orders = orderBook->getOrders(type, product, workingTimestep);
             workingTimestep = orderBook->getPreviousTime(workingTimestep);
             orderBook->indexOfVectorWithMatchingTimestamps--;
 
-            for (int j = 0; j < orders.size(); j++) {
+            for(int j = 0; j < orders.size(); j++) {
                 totalPrice += orders[j].price;
                 totalOrders++;
             }
@@ -177,7 +274,9 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
 {
     //tokenVector[1] = max/min, 2 = product, 3 = bid or ask
 
-    int numberOfTimesteps = 100; // number of timesteps to take into account is set by defualt to 100
+    // number of timesteps to take into account is set by default to the maximum possible
+    int numberOfTimesteps = orderBook->indexOfVectorWithMatchingTimestamps;
+
     std::string currentTimestep = orderBook->currentTime;
     std::string workingTimestep = currentTimestep;
     OrderBookType type = OrderBookEntry::stringToOrderBookType(tokenVector[3]);
@@ -195,6 +294,9 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
         totalMaxPrice += OrderBook::getHighPrice(orders);
         totalMinPrice += OrderBook::getLowPrice(orders);
     }
+    //sets the indexOfVectorWithMatchingTimestamps back to its original value,
+    //as the avg command should not change the current time being looked at by the user
+    orderBook->indexOfVectorWithMatchingTimestamps += numberOfTimesteps;
 
     if(tokenVector[1] == "max")
         std::cout << "The predicted maximum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMaxPrice/numberOfTimesteps << std::endl;

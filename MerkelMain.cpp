@@ -43,9 +43,9 @@ void MerkelMain::printMenu()
     // 7 launch AdvisorBot
     std::cout << "7: Launch AdvisorBot\n " << std::endl;
 
-    std::cout << "============== " << std::endl;
-
-    std::cout << "\nCurrent time is: " << currentTime << "\n" << std::endl;
+//    std::cout << "============== " << std::endl;
+//
+//    std::cout << "\nCurrent time is: " << currentTime << "\n" << std::endl;
 }
 
 void MerkelMain::printHelp()
@@ -234,6 +234,6 @@ void MerkelMain::processUserOption(int userOption)
     }
     if(userOption == 7)
     {
-        advisorBot.startAdvisorBot(orderBook);
+        advisorBot.startAdvisorBot(&orderBook);
     }
 }

@@ -10,8 +10,8 @@ class CSVReader
     public:
      CSVReader();
 
-     static std::vector<OrderBookEntry> readCSV(std::string csvFile);
-     static std::vector<std::vector<OrderBookEntry>> readCSV2(std::string csvFileName);
+//     static std::vector<OrderBookEntry> readCSV(std::string csvFile);
+     static std::vector<std::vector<OrderBookEntry>> readCSV(std::string csvFileName, std::vector<OrderBookEntry>* orders);
      static std::vector<std::string> tokenise(std::string csvLine, char separator);
     
      static OrderBookEntry stringsToOBE(std::string price, 

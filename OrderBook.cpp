@@ -7,8 +7,8 @@
 /** construct, reading a csv data file */
 OrderBook::OrderBook(std::string filename)
 {
-    orders = CSVReader::readCSV(filename);
-    ordersSeparatedByTimestamps = CSVReader::readCSV2(filename);
+//    orders = CSVReader::readCSV(filename);
+    ordersSeparatedByTimestamps = CSVReader::readCSV(filename, &orders);
     currentTime = ordersSeparatedByTimestamps[ordersSeparatedByTimestamps.size()-1][0].timestamp;
     indexOfVectorWithMatchingTimestamps = ordersSeparatedByTimestamps.size()-1;
     totalNumberOfTimesteps = ordersSeparatedByTimestamps.size()-1;
@@ -54,9 +54,7 @@ std::vector<std::string> OrderBook::getKnownProducts()
 //    return orders_sub;
 //}
 
-std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type,
-                                                 std::string product,
-                                                 std::string timestamp)
+std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type, std::string product, std::string timestamp)
 {
     std::vector<OrderBookEntry> orders_sub;
     std::vector<OrderBookEntry> ordersWithMatchingTimestamp;
@@ -79,31 +77,12 @@ std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type,
     }
 
     //find orders in the previously found vector with matching type and product
-    bool foundSectionOfMatches = false;
-
     for (int i = 0; i < ordersWithMatchingTimestamp.size(); i++)
     {
         if (ordersWithMatchingTimestamp[i].orderType == type &&
             ordersWithMatchingTimestamp[i].product == product)
         {
             orders_sub.push_back(ordersWithMatchingTimestamp[i]);
-            foundSectionOfMatches = true;
-        }
-        else if(!foundSectionOfMatches)
-        {
-            i+=50;
-            if(i > ordersWithMatchingTimestamp.size()-1)
-                i = ordersWithMatchingTimestamp.size()-1;
-
-            if (ordersWithMatchingTimestamp[i].product == product &&
-                ordersWithMatchingTimestamp[i].orderType == type)
-            {
-                while(ordersWithMatchingTimestamp[i].product == product &&
-                      ordersWithMatchingTimestamp[i].orderType == type)
-                {
-                    i--;
-                }
-            }
         }
     }
     return orders_sub;

@@ -7,7 +7,7 @@ class AdvisorBot{
 
 public:
     AdvisorBot();
-    void startAdvisorBot(OrderBook orderBook);
+    void startAdvisorBot(OrderBook* orderBook);
 
 private:
     bool shouldExit;

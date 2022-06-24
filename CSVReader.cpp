@@ -8,7 +8,7 @@ CSVReader::CSVReader()
 
 }
 
-std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV2(std::string csvFileName)
+std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV(std::string csvFileName, std::vector<OrderBookEntry>* orders)
 {
     std::vector<std::vector<OrderBookEntry>> vectorOfVectors;
 
@@ -24,6 +24,7 @@ std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV2(std::string csvFile
         {
             try {
                 OrderBookEntry obe = stringsToOBE(tokenise(line, ','));
+                orders->push_back(obe);
                 if(entries.size() > 1)
                 {
                     if(obe.timestamp != entries[entries.size()-1].timestamp)
@@ -46,29 +47,29 @@ std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV2(std::string csvFile
 }
 
 
-std::vector<OrderBookEntry> CSVReader::readCSV(std::string csvFilename)
-{
-    std::vector<OrderBookEntry> entries;
-
-    std::ifstream csvFile{csvFilename};
-    std::string line;
-    if (csvFile.is_open())
-    {
-        while(std::getline(csvFile, line))
-        {
-            try {
-                OrderBookEntry obe = stringsToOBE(tokenise(line, ','));
-                entries.push_back(obe);
-            }catch(const std::exception& e)
-            {
-                std::cout << "CSVReader::readCSV bad data"  << std::endl;
-            }
-        }// end of while
-    }    
-
-    std::cout << "CSVReader::readCSV read " << entries.size() << " entries"  << std::endl;
-    return entries; 
-}
+//std::vector<OrderBookEntry> CSVReader::readCSV(std::string csvFilename)
+//{
+//    std::vector<OrderBookEntry> entries;
+//
+//    std::ifstream csvFile{csvFilename};
+//    std::string line;
+//    if (csvFile.is_open())
+//    {
+//        while(std::getline(csvFile, line))
+//        {
+//            try {
+//                OrderBookEntry obe = stringsToOBE(tokenise(line, ','));
+//                entries.push_back(obe);
+//            }catch(const std::exception& e)
+//            {
+//                std::cout << "CSVReader::readCSV bad data"  << std::endl;
+//            }
+//        }// end of while
+//    }
+//
+//    std::cout << "CSVReader::readCSV read " << entries.size() << " entries"  << std::endl;
+//    return entries;
+//}
 
 std::vector<std::string> CSVReader::tokenise(std::string csvLine, char separator)
 {
