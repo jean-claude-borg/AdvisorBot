@@ -149,18 +149,28 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
     double totalOrders = 0;
     std::vector<OrderBookEntry> orders;
 
-    for(int i = 0; i < numberOfTimesteps; i++)
-    {
-        orders = orderBook->getOrders(type, tokenVector[1], workingTimestep);
-        workingTimestep = orderBook->getPreviousTime(workingTimestep);
+    //prevents going back more timesteps than are available
+    if(numberOfTimesteps <= orderBook->indexOfVectorWithMatchingTimestamps) {
+        for (int i = 0; i < numberOfTimesteps; i++) {
+            orders = orderBook->getOrders(type, tokenVector[1], workingTimestep);
+            workingTimestep = orderBook->getPreviousTime(workingTimestep);
+            orderBook->indexOfVectorWithMatchingTimestamps--;
 
-        for(int j = 0; j < orders.size(); j++)
-        {
-            totalPrice += orders[j].price;
-            totalOrders++;
+            for (int j = 0; j < orders.size(); j++) {
+                totalPrice += orders[j].price;
+                totalOrders++;
+            }
         }
+        std::cout << "The average is: " << totalPrice/totalOrders << std::endl;
+        //sets the indexOfVectorWithMatchingTimestamps back to its original value,
+        //as the avg command should not change the current time being looked at by the user
+        orderBook->indexOfVectorWithMatchingTimestamps += numberOfTimesteps;
     }
-    std::cout << "The average is: " << totalPrice/totalOrders << std::endl;
+    else
+    {
+        std::cout << "\nError, cannot go back " << numberOfTimesteps << " timesteps as there are not enough previous timesteps available..." << std::endl;
+        std::cout << "There are a total of " << orderBook->totalNumberOfTimesteps << " available timesteps and " << orderBook->indexOfVectorWithMatchingTimestamps << " previous timesteps\n" << std::endl;
+    }
 }
 
 void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* orderBook)
@@ -180,6 +190,7 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
     {
         orders = orderBook->getOrders(type, tokenVector[2], workingTimestep);
         workingTimestep = orderBook->getPreviousTime(workingTimestep);
+        orderBook->indexOfVectorWithMatchingTimestamps--;
 
         totalMaxPrice += OrderBook::getHighPrice(orders);
         totalMinPrice += OrderBook::getLowPrice(orders);
@@ -198,10 +209,30 @@ void CommandProcessor::getTime(OrderBook* orderBook)
 
 void CommandProcessor::step(OrderBook* orderBook)
 {
-    orderBook->currentTime = orderBook->getNextTime(orderBook->currentTime);
+    std::string oldTime = orderBook->currentTime;
+    std::string newTime = orderBook->getNextTime(orderBook->currentTime);
+
+    //if oldTime == newTime, the time was not changed, therefore do not update indexOfVectorWithMatchingTimestamps
+    if(oldTime != newTime)
+    {
+        orderBook->currentTime = newTime;
+        orderBook->indexOfVectorWithMatchingTimestamps++;
+    }
+    else
+        std::cout << "\nError: cannot step, current timestep is the latest timestep\n" << std::endl;
 }
 
 void CommandProcessor::stepBack(OrderBook* orderBook)
 {
-    orderBook->currentTime = orderBook->getPreviousTime(orderBook->currentTime);
+    std::string oldTime = orderBook->currentTime;
+    std::string newTime = orderBook->getPreviousTime(orderBook->currentTime);
+
+    //if oldTime == newTime, the time was not changed, therefore do not update indexOfVectorWithMatchingTimestamps
+    if(oldTime != newTime)
+    {
+        orderBook->currentTime = newTime;
+        orderBook->indexOfVectorWithMatchingTimestamps--;
+    }
+    else
+        std::cout << "\nError: cannot stepBack, current timestep is the earliest timestep\n" << std::endl;
 }

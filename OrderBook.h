@@ -35,7 +35,10 @@ class OrderBook
 
         // currentTime is set by default to the latest time
         std::string currentTime;
+        int indexOfVectorWithMatchingTimestamps;
+        int totalNumberOfTimesteps;
 
     private:
         std::vector<OrderBookEntry> orders;
+        std::vector<std::vector<OrderBookEntry>> ordersSeparatedByTimestamps;
 };

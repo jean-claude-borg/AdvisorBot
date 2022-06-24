@@ -8,7 +8,12 @@
 OrderBook::OrderBook(std::string filename)
 {
     orders = CSVReader::readCSV(filename);
-    currentTime = orders[orders.size()-1].timestamp; //include this in documentation
+    ordersSeparatedByTimestamps = CSVReader::readCSV2(filename);
+    currentTime = ordersSeparatedByTimestamps[ordersSeparatedByTimestamps.size()-1][0].timestamp;
+    indexOfVectorWithMatchingTimestamps = ordersSeparatedByTimestamps.size()-1;
+    totalNumberOfTimesteps = ordersSeparatedByTimestamps.size()-1;
+//    currentTime = orders[orders.size()-1].timestamp; //include this in documentation
+
 }
 
 /** return vector of all know products in the dataset*/
@@ -32,23 +37,77 @@ std::vector<std::string> OrderBook::getKnownProducts()
     return products;
 }
 /** return vector of Orders according to the sent filters*/
-std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type, 
-                                        std::string product, 
-                                        std::string timestamp)
+//std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type,
+//                                        std::string product,
+//                                        std::string timestamp)
+//{
+//    std::vector<OrderBookEntry> orders_sub;
+//    for (OrderBookEntry& e : orders)
+//    {
+//        if (e.orderType == type &&
+//            e.product == product &&
+//            e.timestamp == timestamp )
+//            {
+//                orders_sub.push_back(e);
+//            }
+//    }
+//    return orders_sub;
+//}
+
+std::vector<OrderBookEntry> OrderBook::getOrders(OrderBookType type,
+                                                 std::string product,
+                                                 std::string timestamp)
 {
     std::vector<OrderBookEntry> orders_sub;
-    for (OrderBookEntry& e : orders)
+    std::vector<OrderBookEntry> ordersWithMatchingTimestamp;
+
+    //tries to predict the correct index the vector with matching timestamps
+    if(ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps][0].timestamp == timestamp)
     {
-        if (e.orderType == type && 
-            e.product == product && 
-            e.timestamp == timestamp )
+        ordersWithMatchingTimestamp = ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps];
+    }
+
+    //find vector containing orders with matching timestamp
+    else for(int i = 0; i < ordersSeparatedByTimestamps.size(); i++)
+    {
+        if(ordersSeparatedByTimestamps[i][0].timestamp == timestamp)
+        {
+            ordersWithMatchingTimestamp = ordersSeparatedByTimestamps[i];
+            indexOfVectorWithMatchingTimestamps = i;
+            break;
+        }
+    }
+
+    //find orders in the previously found vector with matching type and product
+    bool foundSectionOfMatches = false;
+
+    for (int i = 0; i < ordersWithMatchingTimestamp.size(); i++)
+    {
+        if (ordersWithMatchingTimestamp[i].orderType == type &&
+            ordersWithMatchingTimestamp[i].product == product)
+        {
+            orders_sub.push_back(ordersWithMatchingTimestamp[i]);
+            foundSectionOfMatches = true;
+        }
+        else if(!foundSectionOfMatches)
+        {
+            i+=50;
+            if(i > ordersWithMatchingTimestamp.size()-1)
+                i = ordersWithMatchingTimestamp.size()-1;
+
+            if (ordersWithMatchingTimestamp[i].product == product &&
+                ordersWithMatchingTimestamp[i].orderType == type)
             {
-                orders_sub.push_back(e);
+                while(ordersWithMatchingTimestamp[i].product == product &&
+                      ordersWithMatchingTimestamp[i].orderType == type)
+                {
+                    i--;
+                }
             }
+        }
     }
     return orders_sub;
 }
-
 
 double OrderBook::getHighPrice(std::vector<OrderBookEntry>& orders)
 {
@@ -85,37 +144,25 @@ std::string OrderBook::getLatestTime()
 std::string OrderBook::getNextTime(std::string timestamp)
 {
     std::string next_timestamp = "";
-    for (OrderBookEntry& e : orders)
-    {
-        if (e.timestamp > timestamp) 
-        {
-            next_timestamp = e.timestamp;
-            break;
-        }
-    }
-    if (next_timestamp == "")
-    {
-        next_timestamp = orders[0].timestamp;
-    }
+
+    //does not wrap around to the start of the csvFile, instead returns the same value if user tries to go past
+    //the last timestep in the orderVector
+    if(indexOfVectorWithMatchingTimestamps + 1 >= ordersSeparatedByTimestamps.size())
+        next_timestamp = ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps][0].timestamp;
+    else next_timestamp = ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps + 1][0].timestamp;
+
     return next_timestamp;
 }
 
 std::string OrderBook::getPreviousTime(std::string timestamp)
 {
     std::string previous_timestamp = "";
-    for (auto i = orders.size()-1; i > 0; i--)
-    {
-        OrderBookEntry e = orders[i];
-        if (e.timestamp < timestamp)
-        {
-            previous_timestamp = e.timestamp;
-            break;
-        }
-    }
-    if (previous_timestamp == "")
-    {
-        previous_timestamp = orders[orders.size()-1].timestamp;
-    }
+
+    //does not wrap around if user tries going to a previous timestep before the first timestep in the orderVector
+    if(indexOfVectorWithMatchingTimestamps - 1 < 0)
+        previous_timestamp = ordersSeparatedByTimestamps[0][0].timestamp;
+    else previous_timestamp = ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps-1][0].timestamp;
+
     return previous_timestamp;
 }
 
