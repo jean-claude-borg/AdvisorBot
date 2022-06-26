@@ -2,7 +2,6 @@
 #include <iostream>
 #include <fstream>
 
-
 CSVReader::CSVReader()
 {
 
@@ -25,9 +24,9 @@ std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV(std::string csvFileN
             try {
                 OrderBookEntry obe = stringsToOBE(tokenise(line, ','));
                 orders->push_back(obe);
-                if(entries.size() > 1)
+                if(!entries.empty())
                 {
-                    if(obe.timestamp != entries[entries.size()-1].timestamp)
+                    if(obe.timestamp != entries[0].timestamp)
                     {
                         vectorOfVectors.push_back(entries);
                         entries.clear();
@@ -40,6 +39,9 @@ std::vector<std::vector<OrderBookEntry>> CSVReader::readCSV(std::string csvFileN
             }
             totalLines++;
         }// end of while
+
+        //pushed final collection of timestamps to the vectorOfTimesteps
+        vectorOfVectors.push_back(entries);
     }
 
     std::cout << "CSVReader::readCSV read " << totalLines << " entries"  << std::endl;

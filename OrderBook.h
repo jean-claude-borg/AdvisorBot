@@ -21,6 +21,7 @@ class OrderBook
         std::string getNextTime(std::string timestamp);
         /** returns the previous time before the sent time in the orderbook * */
         std::string getPreviousTime(std::string timestamp);
+        std::string getTimestepAt(int index);
 
         void insertOrder(OrderBookEntry& order);
 

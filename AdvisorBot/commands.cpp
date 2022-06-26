@@ -47,6 +47,18 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     {
         CommandProcessor::stepBack(orderBook);
     }
+    else if(tokenVector[0] == "stepEarliest")
+    {
+        CommandProcessor::stepEarliest(orderBook);
+    }
+    else if(tokenVector[0] == "stepLatest")
+    {
+        CommandProcessor::stepLatest(orderBook);
+    }
+    else if(tokenVector[0] == "jump")
+    {
+        CommandProcessor::jump(orderBook, tokenVector);
+    }
     else if(tokenVector[0] == "predict")
     {
         CommandProcessor::predict(tokenVector, orderBook);
@@ -258,14 +270,23 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
                 totalOrders++;
             }
         }
-        std::cout << "The average is: " << totalPrice/totalOrders << std::endl;
         //sets the indexOfVectorWithMatchingTimestamps back to its original value,
         //as the avg command should not change the current time being looked at by the user
         orderBook->indexOfVectorWithMatchingTimestamps += numberOfTimesteps;
+
+        //if no orders were found, since the only unvalidated input is product name,
+        //that implies that user inputted invalid product name
+        if(orders.empty())
+        {
+            std::cout << "\nerror, " << product << " is not a valid product, use the prod command for a list of available products\n" << std::endl;
+            return;
+        }
+        //if everything went well, prints expected output
+        std::cout << "The average is: " << totalPrice/totalOrders << std::endl;
     }
     else
     {
-        std::cout << "\nError, cannot go back " << numberOfTimesteps << " timesteps as there are not enough previous timesteps available..." << std::endl;
+        std::cout << "\nerror, cannot go back " << numberOfTimesteps << " timesteps as there are not enough previous timesteps available..." << std::endl;
         std::cout << "There are a total of " << orderBook->totalNumberOfTimesteps << " available timesteps and " << orderBook->indexOfVectorWithMatchingTimestamps << " previous timesteps\n" << std::endl;
     }
 }
@@ -299,9 +320,9 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
     orderBook->indexOfVectorWithMatchingTimestamps += numberOfTimesteps;
 
     if(tokenVector[1] == "max")
-        std::cout << "The predicted maximum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMaxPrice/numberOfTimesteps << std::endl;
+        std::cout << "\nThe predicted maximum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMaxPrice/numberOfTimesteps << "\n" << std::endl;
     else if(tokenVector[1] == "min")
-        std::cout << "The predicted minimum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMinPrice/numberOfTimesteps << std::endl;
+        std::cout << "\nThe predicted minimum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMinPrice/numberOfTimesteps << "\n" << std::endl;
 }
 
 void CommandProcessor::getTime(OrderBook* orderBook)
@@ -311,17 +332,16 @@ void CommandProcessor::getTime(OrderBook* orderBook)
 
 void CommandProcessor::step(OrderBook* orderBook)
 {
-    std::string oldTime = orderBook->currentTime;
-    std::string newTime = orderBook->getNextTime(orderBook->currentTime);
+        std::string oldTime = orderBook->currentTime;
+        std::string newTime = orderBook->getNextTime(orderBook->currentTime);
 
-    //if oldTime == newTime, the time was not changed, therefore do not update indexOfVectorWithMatchingTimestamps
-    if(oldTime != newTime)
-    {
-        orderBook->currentTime = newTime;
-        orderBook->indexOfVectorWithMatchingTimestamps++;
-    }
-    else
-        std::cout << "\nError: cannot step, current timestep is the latest timestep\n" << std::endl;
+        //if oldTime == newTime, the time was not changed, therefore do not update indexOfVectorWithMatchingTimestamps
+        if (oldTime != newTime) {
+            orderBook->currentTime = newTime;
+            orderBook->indexOfVectorWithMatchingTimestamps++;
+        } else
+            std::cout << "\nError: cannot step, current timestep is the latest timestep\n" << std::endl;
+
 }
 
 void CommandProcessor::stepBack(OrderBook* orderBook)
@@ -336,5 +356,45 @@ void CommandProcessor::stepBack(OrderBook* orderBook)
         orderBook->indexOfVectorWithMatchingTimestamps--;
     }
     else
-        std::cout << "\nError: cannot stepBack, current timestep is the earliest timestep\n" << std::endl;
+        std::cout << "\nerror: cannot stepBack, current timestep is the earliest timestep\n" << std::endl;
+}
+
+void CommandProcessor::stepEarliest(OrderBook *orderBook)
+{
+    orderBook->currentTime = orderBook->getEarliestTime();
+    orderBook->indexOfVectorWithMatchingTimestamps = 0;
+}
+
+void CommandProcessor::stepLatest(OrderBook *orderBook)
+{
+    orderBook->currentTime = orderBook->getLatestTime();
+    orderBook->indexOfVectorWithMatchingTimestamps = orderBook->totalNumberOfTimesteps-1;
+}
+
+void CommandProcessor::jump(OrderBook* orderBook, std::vector<std::string> tokenVector)
+{
+    if(tokenVector.size() > 2)
+    {
+        std::cout << "\nerror: invalid number of arguments, expected 1 but received: " << tokenVector.size()-1 << "\n" << std::endl;
+        return;
+    }
+
+    int index;
+    try{ index = std::stoi(tokenVector[1]);}
+    catch(std::exception &e)
+    {
+        std::cout << "\nerror: invalid argument, expected integer but got: " << tokenVector[1] << "\n" << std::endl;
+        return;
+    }
+
+    if(index < 0 || index > orderBook->totalNumberOfTimesteps)
+    {
+        std::cout << "\nerror: invalid index, index cannot be less than 0 or greater than the total number of timesteps-1 which is: "
+                  << orderBook->totalNumberOfTimesteps-1 << "\n" << std::endl;
+        return;
+    }
+
+    //if above checks succeed, the input is validated
+    orderBook->currentTime = orderBook->getTimestepAt(index);
+    orderBook->indexOfVectorWithMatchingTimestamps = index;
 }

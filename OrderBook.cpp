@@ -9,11 +9,9 @@ OrderBook::OrderBook(std::string filename)
 {
 //    orders = CSVReader::readCSV(filename);
     ordersSeparatedByTimestamps = CSVReader::readCSV(filename, &orders);
-    currentTime = ordersSeparatedByTimestamps[ordersSeparatedByTimestamps.size()-1][0].timestamp;
-    indexOfVectorWithMatchingTimestamps = ordersSeparatedByTimestamps.size()-1;
-    totalNumberOfTimesteps = ordersSeparatedByTimestamps.size()-1;
-//    currentTime = orders[orders.size()-1].timestamp; //include this in documentation
-
+    totalNumberOfTimesteps = ordersSeparatedByTimestamps.size();
+    currentTime = ordersSeparatedByTimestamps[totalNumberOfTimesteps-1][0].timestamp;
+    indexOfVectorWithMatchingTimestamps = totalNumberOfTimesteps-1;
 }
 
 /** return vector of all know products in the dataset*/
@@ -122,7 +120,7 @@ std::string OrderBook::getLatestTime()
 
 std::string OrderBook::getNextTime(std::string timestamp)
 {
-    std::string next_timestamp = "";
+    std::string next_timestamp;
 
     //does not wrap around to the start of the csvFile, instead returns the same value if user tries to go past
     //the last timestep in the orderVector
@@ -143,6 +141,11 @@ std::string OrderBook::getPreviousTime(std::string timestamp)
     else previous_timestamp = ordersSeparatedByTimestamps[indexOfVectorWithMatchingTimestamps-1][0].timestamp;
 
     return previous_timestamp;
+}
+
+std::string OrderBook::getTimestepAt(int index)
+{
+    return ordersSeparatedByTimestamps[index][0].timestamp;
 }
 
 void OrderBook::insertOrder(OrderBookEntry& order)

@@ -16,6 +16,9 @@ public:
     static void step(OrderBook* orderBook);
     static void stepBack(OrderBook* orderBook);
     static void predict(std::vector<std::string> tokenVector, OrderBook* orderBook);
+    static void stepEarliest(OrderBook* orderBook);
+    static void stepLatest(OrderBook* orderBook);
+    static void jump(OrderBook* orderBook, std::vector<std::string> tokenVector);
 
 private:
     static void clearScreen();
