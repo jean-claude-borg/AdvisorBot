@@ -3,6 +3,8 @@
 
 int CommandProcessor::processCommands(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
+    auto numberOfTokens = tokenVector.size();
+
     if(tokenVector.empty())
         return 3; //return value of 3 means user inputted nothing
 
@@ -15,11 +17,11 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     {
         CommandProcessor::printHelp(tokenVector);
     }
-    else if(tokenVector[0] == "clear")
+    else if(tokenVector[0] == "clear" && numberOfTokens == 1)
     {
         CommandProcessor::clearScreen();
     }
-    else if(tokenVector[0] == "prod")
+    else if(tokenVector[0] == "prod" && numberOfTokens == 1)
     {
         CommandProcessor::listProducts(orderBook);
     }
@@ -35,23 +37,23 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     {
         CommandProcessor::getAverage(tokenVector, orderBook);
     }
-    else if(tokenVector[0] == "time")
+    else if(tokenVector[0] == "time" && numberOfTokens == 1)
     {
         CommandProcessor::getTime(orderBook);
     }
-    else if(tokenVector[0] == "step")
+    else if(tokenVector[0] == "step" && numberOfTokens == 1)
     {
         CommandProcessor::step(orderBook);
     }
-    else if(tokenVector[0] == "stepBack")
+    else if(tokenVector[0] == "stepBack" && numberOfTokens == 1)
     {
         CommandProcessor::stepBack(orderBook);
     }
-    else if(tokenVector[0] == "stepEarliest")
+    else if(tokenVector[0] == "stepEarliest" && numberOfTokens == 1)
     {
         CommandProcessor::stepEarliest(orderBook);
     }
-    else if(tokenVector[0] == "stepLatest")
+    else if(tokenVector[0] == "stepLatest" && numberOfTokens == 1)
     {
         CommandProcessor::stepLatest(orderBook);
     }
@@ -66,7 +68,7 @@ int CommandProcessor::processCommands(std::vector<std::string> tokenVector, Orde
     //if no available command is entered, prints a message saying the command does not exist
     else
     {
-        std::cout << "\n" << tokenVector[0] << ": command not found, type help for a list of commands\n" << std::endl;
+        std::cout << "\nerror: command not found, type help for a list of commands\n" << std::endl;
         return 2; // return value of 2 indicates that user inputted invalid command
     }
     // return value of 0 means no errors
@@ -77,7 +79,7 @@ void CommandProcessor::printHelp(std::vector<std::string> tokenVector)
 {
     auto numberOfTokens = tokenVector.size();
     if(numberOfTokens == 1)
-        std::cout << "\nThe available commands are help, prod, min, max, avg, predict, time, step, stepBack, clear and exit\n" << std::endl;
+        std::cout << "\nThe available commands are help, prod, min, max, avg, predict, time, step, stepBack, jump, clear and exit\n" << std::endl;
     else if(numberOfTokens == 2 && tokenVector[1] == "prod")
         std::cout << "\nThe prod command will show all available products as a list\n" << std::endl;
     else if(numberOfTokens == 2 && tokenVector[1] == "clear")
@@ -100,6 +102,8 @@ void CommandProcessor::printHelp(std::vector<std::string> tokenVector)
         std::cout << "\nThe step command will move focus to the next timestep\n" << std::endl;
     else if(numberOfTokens == 2 && tokenVector[1] == "stepBack")
         std::cout << "\nThe stepBack command will move focus to the previous timestep\n" << std::endl;
+    else if(numberOfTokens == 2 && tokenVector[1] == "jump")
+        std::cout << "\nThe jump command will move your focused timestep to the specified index\n" << std::endl;
     else if(numberOfTokens == 2 && tokenVector[1] == "exit")
         std::cout << "\nThe exit command will exit this program\n" << std::endl;
 
@@ -278,7 +282,7 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
         //that implies that user inputted invalid product name
         if(orders.empty())
         {
-            std::cout << "\nerror, " << product << " is not a valid product, use the prod command for a list of available products\n" << std::endl;
+            std::cout << "\nerror: " << product << " is not a valid product, use the prod command for a list of available products\n" << std::endl;
             return;
         }
         //if everything went well, prints expected output
@@ -293,14 +297,35 @@ void CommandProcessor::getAverage(std::vector<std::string> tokenVector, OrderBoo
 
 void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* orderBook)
 {
+    int numberOfTokens = tokenVector.size();
+    if(numberOfTokens != 4)
+    {
+        std::cout << "\nerror: invalid number of arguments, expected 3 but received: " << numberOfTokens-1 << "\n" << std::endl;
+        return;
+    }
+
     //tokenVector[1] = max/min, 2 = product, 3 = bid or ask
+    std::string choice = tokenVector[1]; // choice = max or min
+    std::string product = tokenVector[2];
+    std::string productType = tokenVector[3];
+
+    enum OrderBookType type;
+    if(productType == "bid")
+        type = OrderBookType::bid;
+    else if(productType == "ask")
+        type = OrderBookType::ask;
+        //if user inputted invalid type:
+    else
+    {
+        std::cout << "\n" << productType << ": not a valid product type, expected bid or ask\n" << std::endl;
+        return;
+    }
 
     // number of timesteps to take into account is set by default to the maximum possible
     int numberOfTimesteps = orderBook->indexOfVectorWithMatchingTimestamps;
 
     std::string currentTimestep = orderBook->currentTime;
     std::string workingTimestep = currentTimestep;
-    OrderBookType type = OrderBookEntry::stringToOrderBookType(tokenVector[3]);
 
     double totalMaxPrice = 0;
     double totalMinPrice = 0;
@@ -308,7 +333,14 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
 
     for(int i = 0; i < numberOfTimesteps; i++)
     {
-        orders = orderBook->getOrders(type, tokenVector[2], workingTimestep);
+        orders = orderBook->getOrders(type, product, workingTimestep);
+        //if no orders were found, since the only unvalidated input is product name,
+        //that implies that user inputted invalid product name
+        if(orders.empty())
+        {
+            std::cout << "\nerror: " << product << " is not a valid product, use the prod command for a list of available products\n" << std::endl;
+            return;
+        }
         workingTimestep = orderBook->getPreviousTime(workingTimestep);
         orderBook->indexOfVectorWithMatchingTimestamps--;
 
@@ -319,10 +351,14 @@ void CommandProcessor::predict(std::vector<std::string> tokenVector, OrderBook* 
     //as the avg command should not change the current time being looked at by the user
     orderBook->indexOfVectorWithMatchingTimestamps += numberOfTimesteps;
 
-    if(tokenVector[1] == "max")
-        std::cout << "\nThe predicted maximum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMaxPrice/numberOfTimesteps << "\n" << std::endl;
-    else if(tokenVector[1] == "min")
-        std::cout << "\nThe predicted minimum " << tokenVector[3] << " for " << tokenVector[2] << " is: " << totalMinPrice/numberOfTimesteps << "\n" << std::endl;
+    if(choice == "max")
+        std::cout << "\nThe predicted maximum " << productType << " for " << product << " is: " << totalMaxPrice/numberOfTimesteps << "\n" << std::endl;
+    else if(choice == "min")
+        std::cout << "\nThe predicted minimum " << productType << " for " << product << " is: " << totalMinPrice/numberOfTimesteps << "\n" << std::endl;
+    else
+    {
+        std::cout << "\nerror: invalid argument, expected (min / max) but received: " << choice << "\n" << std::endl;
+    }
 }
 
 void CommandProcessor::getTime(OrderBook* orderBook)
